@@ -7,35 +7,28 @@ import lm, {
   TTransactionPosition,
 } from '@synonymdev/react-native-ldk';
 import ldk from "@synonymdev/react-native-ldk/dist/ldk"
-import {getAddress} from '../ldk/wallet';
+import {broadcastTransaction, getAddress, getTransactionData, getTransactionPosition} from '../ldk/wallet';
 import {err, Result} from '../types/result';
-import { getBestBlock, getBlockHashFromHeight, getScriptPubKeyHistory, getTransactionData, getTransactionPosition, broadcastTransaction, getLatestBlockHeader, updateHeader } from '../electrs/http';
+// import { getBestBlock, getBlockHashFromHeight, getScriptPubKeyHistory, getTransactionData, getTransactionPosition, broadcastTransaction, getLatestBlockHeader, updateHeader } from '../electrs/http';
 import { getAccount } from '../util/account';
+import { getBestBlock, getBlockHashFromHeight, getScriptPubKeyHistory, subscribeToHeader, updateHeader } from '../electrs/electrs';
 
 export const setupLdk = async () => {  
   try {
-    const genesisHash = await getBlockHashFromHeight(0);
-    const headerInfo = await getLatestBlockHeader()
+    await ldk.reset()
+    const genesisHash = await getBlockHashFromHeight({height: 0});
+    if (genesisHash.isErr()) {
+      throw new Error("COuld not get genesis hash.") 
+    }
+
+    // const headerInfo = await getLatestBlockHeader()
     const account = await getAccount();
     ldk.setLogLevel(ELdkLogLevels.trace, true)
     await lm.setBaseStoragePath(`${RNFS.DocumentDirectoryPath}/baywallet/`);
-    // Subscribe to new blocks and sync LDK accordingly.
-    // const headerInfo = await subscribeToHeader({
-    //   onReceive: async (): Promise<void> => {
-    //     const syncRes = await syncLdk();
-    //     if (syncRes.isErr()) {
-    //       return;
-    //     }
-    //   },
-    // });
-    // if (headerInfo.isErr()) {
-    //   return;
-    // }
-    await updateHeader(JSON.stringify(headerInfo));
 
     const lmStart = await lm.start({
       account,
-      genesisHash: genesisHash,
+      genesisHash: genesisHash.value,
       getBestBlock,
       getAddress,
       getScriptPubKeyHistory,
@@ -48,6 +41,8 @@ export const setupLdk = async () => {
     if (lmStart.isErr()) {
       return err(`ERROR STARTING: ${lmStart.error.message}`);
     }
+
+    await syncLdk()
     
   } catch (e) {
     console.error('FAILED TO SET UP LDK', e);

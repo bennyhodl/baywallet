@@ -6,6 +6,7 @@ import { EmitterSubscription } from "react-native";
 import lm, { EEventTypes, TChannelManagerPayment, TChannelUpdate } from "@synonymdev/react-native-ldk";
 import Toast from "react-native-toast-message";
 import { getLatestBlockHeader } from "../electrs/http";
+import { connectToElectrum, subscribeToHeader, updateHeader } from "../electrs/electrs";
 
 export const useLightningNode = (
 	logSubscription: EmitterSubscription | undefined, 
@@ -36,18 +37,29 @@ export const useLightningNode = (
   }
 
   const connectToLightning = async () => {
-    ldk.reset()
+		// Connect to Electrum Server
+		const electrumResponse = await connectToElectrum({});
+		if (electrumResponse.isErr()) {
+			console.log("could not conenct electrum", electrumResponse.error)
+			return;
+		}
+		console.log("Connected", electrumResponse.value)
+		// Subscribe to new blocks and sync LDK accordingly.
+		const headerInfo = await subscribeToHeader({
+      onReceive: async (): Promise<void> => {
+        const syncRes = await syncLdk();
+        if (syncRes.isErr()) {
+          return;
+        }
+      },
+    });
+    if (headerInfo.isErr()) {
+      return;
+    }
+    await updateHeader({header: headerInfo.value});
     await setupLdk()
     setNodeStarted(true)
   }
-
-	useEffect(() => {
-		let interval: NodeJS.Timer
-		interval = setInterval(() => {
-			getLatestBlockHeader()
-			syncLdk()
-		}, 100000)
-	})
 
   useEffect(() => {
     if (!logSubscription) {

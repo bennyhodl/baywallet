@@ -33,7 +33,7 @@ services:
     environment:
       - NET=regtest
       - COIN=bitcoin
-      - DAEMON_URL=baywallet:baywallet@192.168.1.14:18443
+      - DAEMON_URL=baywallet:baywallet@localhost:18443
     volumes:
       - ./docker/electrumx:/data
     ports:

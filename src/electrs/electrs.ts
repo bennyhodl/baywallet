@@ -17,16 +17,16 @@ export const connectToElectrum = async ({
   options?: {net?: any; tls?: any};
 }): Promise<Result<string>> => {
   const net = options.net ?? global?.net;
-  const _tls = options.tls ?? global?.tls;
+  const _tls = options.tls ?? global.tls;
 
   console.info('NET', net);
   
   const startResponse = await electrum.start({
     network: "bitcoinRegtest",
-    customPeers: 		{
-			host: '35.233.47.252',
-			ssl: 18484,
-			tcp: 18483,
+    customPeers: {
+			host: '127.0.0.1',
+			// ssl: 18484,
+			tcp: 50001,
 			protocol: 'tcp',
 		},
     net,
@@ -34,13 +34,14 @@ export const connectToElectrum = async ({
   });
 
   if (startResponse.error) {
+    console.log("attempting one more time")
     //Attempt one more time
     const {error, data} = await electrum.start({
       network: "bitcoinRegtest",
       customPeers: 		{
-			host: '35.233.47.252',
-			ssl: 18484,
-			tcp: 18483,
+			host: '127.0.0.1',
+			// ssl: 18484,
+			tcp: 50001,
 			protocol: 'tcp',
 		},
       net,
@@ -68,7 +69,7 @@ export const getBestBlock = async (): Promise<THeader> => {
  * @param header Header hex to save to local storage
  * @returns true if it stored correctly
  */
-export const updateHeader = async (header: THeader): Promise<boolean> => {
+export const updateHeader = async ({header}:{header:THeader}): Promise<boolean> => {
   const result = await setItem('header', JSON.stringify(header));
   return result;
 };
@@ -146,7 +147,7 @@ export const subscribeToHeader = async ({
       const hex = data[0].hex;
       const hash = getBlockHashFromHex({blockHex: hex});
       const header = {...data[0], hash};
-      await updateHeader(header);
+      await updateHeader({header});
       if (onReceive) {
         onReceive();
       }
@@ -159,7 +160,7 @@ export const subscribeToHeader = async ({
   const hex = subscribeResponse.data.hex;
   const hash = await getBlockHashFromHex({blockHex: hex});
   const header = {...subscribeResponse.data, hash};
-  await updateHeader(header);
+  await updateHeader({header});
   return ok(header);
 };
 

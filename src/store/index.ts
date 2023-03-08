@@ -6,12 +6,12 @@ export class DataStore {
     public lightningStore: LightningStore
     public accountStore: AccountStore
     public settingsStore: SettingsStore
-    public nostrStore: NostrStore
+    // public nostrStore: NostrStore
     
     constructor() {
         this.lightningStore = new LightningStore(this)
         this.accountStore = new AccountStore(this)
         this.settingsStore = new SettingsStore(this)
-        this.nostrStore = new NostrStore(this)
+        // this.nostrStore = new NostrStore(this)
     }
 }
